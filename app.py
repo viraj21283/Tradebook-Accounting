@@ -13,7 +13,7 @@ uploaded_file = st.file_uploader("Upload tradebook CSV", type="csv")
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # Standard ledgers for equity trading
+    # --- Ledger Setup ---
     ledgers = set([
         "Broker Account",
         "Trading Account",
@@ -24,16 +24,16 @@ if uploaded_file:
         "Other Charges Account",
         "GST Account",
     ])
-    # Add a separate ledger for each symbol traded
+
     for symbol in df['symbol'].dropna().unique():
         ledgers.add(f"{symbol} (Trading)")
 
-    st.subheader("Required Ledgers (Create these in Tally):")
+    st.subheader("Required Ledgers:")
     for ledger in sorted(ledgers):
         st.write(f"- {ledger}")
 
-    st.subheader("Accounting Journal Entries For All Transactions:")
-    entries = []
+    # --- Standard Journal Entry Format ---
+    standard_entries = []
     for _, row in df.iterrows():
         symbol = row['symbol']
         qty = row['quantity']
@@ -42,24 +42,67 @@ if uploaded_file:
         date = row['trade_date']
         amount = qty * price
         if trade_type.lower() == "buy":
-            entries.append({
+            standard_entries.append({
                 "Date": date,
                 "Debit Ledger": f"{symbol} (Trading)",
                 "Credit Ledger": "Broker Account",
                 "Amount": round(amount, 2),
-                "Narration": f"[BUY] Purchased {qty} shares of {symbol} @ {price}; funds moved to broker account"
+                "Narration": f"[BUY] Purchased {qty} shares of {symbol} @ {price}; settled with broker"
             })
         elif trade_type.lower() == "sell":
-            entries.append({
+            standard_entries.append({
                 "Date": date,
                 "Debit Ledger": "Broker Account",
                 "Credit Ledger": f"{symbol} (Trading)",
                 "Amount": round(amount, 2),
-                "Narration": f"[SELL] Sold {qty} shares of {symbol} @ {price}; proceeds credited by broker"
+                "Narration": f"[SELL] Sold {qty} shares of {symbol} @ {price}; proceeds from broker"
             })
-    entry_df = pd.DataFrame(entries)
-    st.dataframe(entry_df)  # This shows all transactions, not just the first 20
+    standard_df = pd.DataFrame(standard_entries)
+    st.subheader("Journal Entries (Standard Format):")
+    st.dataframe(standard_df)
 
-    st.info("All journal entries shown are generated from your uploaded tradebook, replacing Bank Account with Broker Account for correct settlement. Add logic for brokerage, STT, or other charges as needed.")
+    # --- Tally Excel Template Format ---
+    tally_entries = []
+    voucher_type = "Journal"
+    for idx, entry in enumerate(standard_entries):
+        # Debit row
+        tally_entries.append({
+            "Voucher Date": entry['Date'],
+            "Voucher Type Name": voucher_type,
+            "Voucher Number": idx+1,
+            "Voucher Narration": entry['Narration'],
+            "Buyer/Supplier - Pincode": "",
+            "Ledger Name": entry['Debit Ledger'],
+            "Ledger Amount": entry['Amount'],
+            "Ledger Amount Dr/Cr": "Dr"
+        })
+        # Credit row
+        tally_entries.append({
+            "Voucher Date": entry['Date'],
+            "Voucher Type Name": voucher_type,
+            "Voucher Number": idx+1,
+            "Voucher Narration": entry['Narration'],
+            "Buyer/Supplier - Pincode": "",
+            "Ledger Name": entry['Credit Ledger'],
+            "Ledger Amount": entry['Amount'],
+            "Ledger Amount Dr/Cr": "Cr"
+        })
+    tally_df = pd.DataFrame(tally_entries)
+    st.subheader("Journal Entries (Tally Excel Template Format):")
+    st.dataframe(tally_df)
 
-st.warning("Disclaimer: Automated tool for educational use. Verify entries with a qualified accountant before posting in Tally.")
+    # --- Download Buttons ---
+    st.download_button(
+        "Download Journal Entries (Standard CSV)",
+        standard_df.to_csv(index=False),
+        file_name="journal_entries_standard.csv",
+        mime="text/csv"
+    )
+    st.download_button(
+        "Download Journal Entries (Tally Template CSV)",
+        tally_df.to_csv(index=False),
+        file_name="journal_entries_tally_template.csv",
+        mime="text/csv"
+    )
+
+st.warning("Disclaimer: Automated accounting tool. Review with a qualified accountant before posting in Tally.")
