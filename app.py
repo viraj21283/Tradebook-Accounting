@@ -18,7 +18,6 @@ if uploaded_file:
         "Broker Account",
         "Trading Account",
         "Demat/Depository Account",
-        "Bank Account",
         "Securities Transaction Tax Account",
         "Exchange Charges Account",
         "Profit & Loss A/c",
@@ -33,7 +32,7 @@ if uploaded_file:
     for ledger in sorted(ledgers):
         st.write(f"- {ledger}")
 
-    st.subheader("Sample Accounting Journal Entries:")
+    st.subheader("Accounting Journal Entries For All Transactions:")
     entries = []
     for _, row in df.iterrows():
         symbol = row['symbol']
@@ -46,22 +45,21 @@ if uploaded_file:
             entries.append({
                 "Date": date,
                 "Debit Ledger": f"{symbol} (Trading)",
-                "Credit Ledger": "Bank Account",
+                "Credit Ledger": "Broker Account",
                 "Amount": round(amount, 2),
-                "Narration": f"Purchased {qty} shares of {symbol} @ {price}"
+                "Narration": f"[BUY] Purchased {qty} shares of {symbol} @ {price}; funds moved to broker account"
             })
         elif trade_type.lower() == "sell":
             entries.append({
                 "Date": date,
-                "Debit Ledger": "Bank Account",
+                "Debit Ledger": "Broker Account",
                 "Credit Ledger": f"{symbol} (Trading)",
                 "Amount": round(amount, 2),
-                "Narration": f"Sold {qty} shares of {symbol} @ {price}"
+                "Narration": f"[SELL] Sold {qty} shares of {symbol} @ {price}; proceeds credited by broker"
             })
-        # You can expand with additional logic for charges, taxes, etc., if more columns/data available
-
     entry_df = pd.DataFrame(entries)
-    st.dataframe(entry_df.head(20))
-    st.info("These journal entries are generated from your uploaded tradebook. Please customize logic for any brokerage, STT or other fees involved as per your business needs.")
+    st.dataframe(entry_df)  # This shows all transactions, not just the first 20
 
-st.warning("Disclaimer: This is an automated accounting tool for educational use only. Review all entries with a qualified accountant before posting in Tally.")
+    st.info("All journal entries shown are generated from your uploaded tradebook, replacing Bank Account with Broker Account for correct settlement. Add logic for brokerage, STT, or other charges as needed.")
+
+st.warning("Disclaimer: Automated tool for educational use. Verify entries with a qualified accountant before posting in Tally.")
