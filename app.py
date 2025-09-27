@@ -10,29 +10,37 @@ symbol, isin, trade_date, exchange, segment, series, trade_type, auction, quanti
 
 uploaded_file = st.file_uploader("Upload tradebook CSV", type="csv")
 
+# Ledger types mapping
+ledger_types = {
+    "Broker Account": "Sundry Creditor",
+    "Trading Account": "Direct Income / Expense",
+    "Demat/Depository Account": "Depository",
+    "Securities Transaction Tax Account": "Duties & Taxes",
+    "Exchange Charges Account": "Indirect Expense",
+    "Profit & Loss A/c": "Profit & Loss Account",
+    "Other Charges Account": "Indirect Expense",
+    "GST Account": "Duties & Taxes",
+}
+
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # --- Ledger Setup ---
-    ledgers = set([
-        "Broker Account",
-        "Trading Account",
-        "Demat/Depository Account",
-        "Securities Transaction Tax Account",
-        "Exchange Charges Account",
-        "Profit & Loss A/c",
-        "Other Charges Account",
-        "GST Account",
-    ])
-
+    ledger_list = []
+    # Add main ledgers with types
+    for key, ltype in ledger_types.items():
+        ledger_list.append({"Ledger Name": key, "Ledger Type": ltype})
+    # Add symbol-wise ledgers as Stock-in-Hand
     for symbol in df['symbol'].dropna().unique():
-        ledgers.add(f"{symbol} (Trading)")
+        ledger_list.append({
+            "Ledger Name": f"{symbol} (Trading)",
+            "Ledger Type": "Stock-in-Hand"
+        })
 
-    st.subheader("Required Ledgers:")
-    for ledger in sorted(ledgers):
-        st.write(f"- {ledger}")
+    st.subheader("Required Ledgers (Name and Type):")
+    ledger_df = pd.DataFrame(ledger_list)
+    st.dataframe(ledger_df)
 
-    # --- Standard Journal Entry Format ---
+    # --- Journal Entries as before ---
     standard_entries = []
     for _, row in df.iterrows():
         symbol = row['symbol']
@@ -102,6 +110,12 @@ if uploaded_file:
         "Download Journal Entries (Tally Template CSV)",
         tally_df.to_csv(index=False),
         file_name="journal_entries_tally_template.csv",
+        mime="text/csv"
+    )
+    st.download_button(
+        "Download Ledgers with Types (CSV)",
+        ledger_df.to_csv(index=False),
+        file_name="ledger_list_with_types.csv",
         mime="text/csv"
     )
 
