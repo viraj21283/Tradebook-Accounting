@@ -26,10 +26,8 @@ if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
     ledger_list = []
-    # Add main ledgers with types
     for key, ltype in ledger_types.items():
         ledger_list.append({"Ledger Name": key, "Ledger Type": ltype})
-    # Add symbol-wise ledgers as Stock-in-Hand
     for symbol in df['symbol'].dropna().unique():
         ledger_list.append({
             "Ledger Name": f"{symbol} (Trading)",
@@ -73,7 +71,6 @@ if uploaded_file:
     tally_entries = []
     voucher_type = "Journal"
     for idx, entry in enumerate(standard_entries):
-        # Debit row
         tally_entries.append({
             "Voucher Date": entry['Date'],
             "Voucher Type Name": voucher_type,
@@ -84,7 +81,6 @@ if uploaded_file:
             "Ledger Amount": entry['Amount'],
             "Ledger Amount Dr/Cr": "Dr"
         })
-        # Credit row
         tally_entries.append({
             "Voucher Date": entry['Date'],
             "Voucher Type Name": voucher_type,
@@ -119,4 +115,12 @@ if uploaded_file:
         mime="text/csv"
     )
 
-st.warning("Disclaimer: Automated accounting tool. Review with a qualified accountant before posting in Tally.")
+st.info(
+    "Disclaimer: This tool is for informational and educational purposes only. "
+    "Please consult a qualified accountant or tax advisor before posting entries in Tally. "
+    "The accuracy and suitability of these entries should be validated for your specific use case."
+)
+st.markdown(
+    "<div style='text-align:center;font-size:20px;'>Made with ❤️ by Viraj Shah</div>",
+    unsafe_allow_html=True
+)
